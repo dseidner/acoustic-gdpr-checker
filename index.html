@@ -1,0 +1,314 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.3/jquery.min.js"></script>
+  <script src="http://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/angular.js/1.5.11/angular.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap.min.js" integrity="sha256-6vbKDGwy9JmzGKxxeypGzCjyOmACDtgheaOQT6ZVafA=" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/angular-ui-bootstrap/2.5.0/ui-bootstrap-tpls.min.js" integrity="sha256-tyfWW2LtJQNI+l3F0h6xDV/ij6Mfn8lwSKHWOsmEgXM=" crossorigin="anonymous"></script>
+    <style>
+    body {
+      padding-top: 70px;
+    }
+    .starter-template {
+      padding: 40px 15px;
+      text-align: center;
+    }
+    .padding-bot-small {
+        margin-bottom: 20px;
+    }
+</style>
+  </head>
+<body ng-app="emailexistsapp" ng-controller="MainCtrl" >
+    <nav class="navbar navbar-inverse navbar-fixed-top">
+      <div class="container">
+        <div class="navbar-header">
+          <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+            <span class="sr-only">Toggle navigation</span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="navbar-brand" href="#">Email Exists</a>
+        </div>
+        <div id="navbar" class="collapse navbar-collapse">
+          <ul class="nav navbar-nav">
+            <li class="active"><a href="#">Home</a></li>
+            <li><a href ng-click="openAbout()">About</a></li>
+          </ul>
+        </div><!--/.nav-collapse -->
+      </div>
+    </nav>
+
+    <div class="container">
+        <div class="starter-template" ng-if="!confirmedPOC">
+            <h1>Email Exists Script</h1>
+            <p class="lead">Do you need to see which of your lists contain a certain email address?<br>
+                Press the button below to accept this proof-of-concept as-is with no guarantees.</p>
+            <a class="btn btn-default" href ng-click="confirmPOC()" role="button">Accept</a>
+        </div>
+
+    <div class="row" ng-if="confirmedPOC">
+        <div class="col-md-2">
+            <button type="button" class="btn btn-default padding-bot-small" ng-click="isCollapsed = !isCollapsed">Toggle OAuth Request</button>
+        </div>
+        <div class="col-md-6" uib-collapse="isCollapsed">
+            <form novalidate>
+              <div class="form-group">
+                <label for="pod">Pod</label>
+                  <select class="form-control" id="pod" ng-model="auth.pod">
+                      <option>0</option>
+                      <option>1</option>
+                      <option>2</option>
+                      <option>3</option>
+                      <option>4</option>
+                      <option>5</option>
+                      <option>6</option>
+                      <option>7</option>
+                      <option>8</option>
+                      <option>9</option>
+                      <option>A</option>
+                    </select>
+              </div>
+              <div class="form-group">
+                <label for="clientid">Client ID</label>
+                <input type="text" class="form-control" id="clientid" placeholder="Client ID" ng-model="auth.clientid">
+              </div>
+              <div class="form-group">
+                <label for="clientsecret">Client Secret</label>
+                <input type="text" class="form-control" id="clientsecret" placeholder="Client Secret" ng-model="auth.clientsecret">
+              </div>
+              <div class="form-group">
+                <label for="refreshtoken">Refresh Token</label>
+                <input type="text" class="form-control" id="refreshtoken" placeholder="Refresh Token" ng-model="auth.refreshtoken">
+              </div>
+              <button type="submit" class="btn btn-default" ng-click="submitAuth(auth)" ng-disabled="!auth.clientid.length || !auth.clientsecret.length || !auth.refreshtoken.length">Submit</button>
+                <!--<pre>{{auth | json }}</pre>-->
+            </form>
+        </div>
+    </div>
+
+    <div class="row" ng-if="accesstoken">
+        <div class="col-md-2">
+            <button type="button" class="btn btn-default padding-bot-small" ng-click="isTokenCollapsed = !isTokenCollapsed">Toggle Token Details</button>
+        </div>
+        <div class="col-md-4" uib-collapse="isTokenCollapsed" ng-if="accesstoken.access_token.length">
+            <b>Access token</b>: {{accesstoken.access_token}}<br/>
+            <b>Expires In</b>: {{accesstoken.expires_in}}
+        </div>
+        <div class="col-md-6" uib-collapse="isTokenCollapsed">
+            Token Response:<br/>
+            <pre>{{ accesstoken | json }}</pre>
+        </div>
+    </div>
+
+    <div class="row" ng-if="accesstoken.access_token.length">
+        <div class="col-md-2">
+            <button type="button" class="btn btn-default padding-bot-small" ng-click="isEmailCollapsed = !isEmailCollapsed">Toggle Email Form</button>
+        </div>
+        <div class="col-md-6" uib-collapse="isEmailCollapsed">
+            <form novalidate>
+              <div class="form-group">
+                <label for="emailaddress">Email Address</label>
+                <input type="email" class="form-control" id="emailaddress" placeholder="Email Address" ng-model="req.emailaddress">
+              </div>
+              <button type="submit" class="btn btn-default" ng-click="submitEmail(req.emailaddress, auth)" ng-disabled="!req.emailaddress.length || submittedEmail">Submit</button>
+                <span ng-show="submittedEmail" class="pull-left" style="padding-right:10px;"><img src="images/loader.gif"/></span>
+            </form>
+        </div>
+    </div>
+
+    <!--<div class="row">-->
+        <!--<div class="col-md-12">-->
+            <!--<pre>{{submitemaildata | json }}</pre>-->
+        <!--</div>-->
+    <!--</div>-->
+
+    <div class="row" ng-if="submitemaildata.data.length">
+        <div class="col-md-9">
+            <a href="/images/{{submitemaildata.note}}.csv" class="btn btn-info" role="button" style="margin-bottom:15px;">Download CSV</a>
+            <table class="table table-condensed">
+              <thead>
+              <th>List</th>
+              <th>List ID</th>
+              <th>Recipient ID</th>
+              </thead>
+                <tbody>
+                <tr ng-repeat="re in submitemaildata.data" ng-class="successClass(re.recipientid)">
+                    <td>{{re.listname}}</td>
+                    <td>{{re.listid}}</td>
+                    <td ng-if="re.recipientid != '0'">{{re.recipientid}} <a href ng-click="submitGdprErasure(re.listid, re.recipientid)" uib-tooltip="Submit a GDPR Erasure job" ng-if="!checkForJob(re.recipientid)"><span class="glyphicon glyphicon-remove" aria-hidden="true"></span></a>
+                        <span class="glyphicon glyphicon-ok-circle" aria-hidden="true" ng-if="checkForJob(re.recipientid)"></span></td>
+                    <td ng-if="re.recipientid == '0'">&nbsp;</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="col-md-3" ng-if="gdprerasure">
+            <span ng-repeat="(key,value) in gdprerasure">
+                <span ng-if="$first"><b>GDPR Jobs</b><br/><br/></span>
+                <span ng-repeat="(k,v) in value">
+                    <b>{{k}}</b>: {{v}}<br/>
+                </span>
+                <a href ng-click="checkStatusOfGdprJob(key, value)">Check Status</a>
+                <br/><br/>
+            </span>
+        </div>
+    </div>
+
+</div>
+<script type="text/ng-template" id="aboutContent.html">
+    <div class="modal-header">
+        <button type="button" class="close" ng-click="$dismiss()" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+        <h3 class="modal-title" id="modal-title">About</h3>
+    </div>
+    <div class="modal-body" id="modal-body">
+        Thanks for trying this proof-of-concept tool! It attempts to authenticate via OAuth to your Acoustic Campaign org, get all shared databases, and then check each database (regardless of key type) for an email address.
+        <br/><br/>Do note that this script does NOT check the databases in any private directories.
+        <br/><br/>It also writes a CSV with the results of checking each database into the same directory of the script.
+    </div>
+</script>
+<script>
+var mymodal = angular.module('emailexistsapp', ['ui.bootstrap']);
+
+mymodal.controller('MainCtrl', function ($scope, $http, $uibModal) {
+    $scope.showModal = false;
+    $scope.confirmedPOC = false;
+    $scope.submittedAuth = false;
+    $scope.submittedEmail = false;
+    $scope.submittedGdprErasure = false;
+    $scope.emailaddress = "";
+    $scope.gdprerasure = {};
+    $scope.toggleModal = function(){
+        $scope.showModal = !$scope.showModal;
+    };
+    console.log("Hello!");
+
+    $scope.confirmPOC = function () {
+        $scope.confirmedPOC = true;
+        console.log("Confirmed POC");
+    };
+
+    $scope.submitAuth = function (auth) {
+        console.log(auth.pod);
+        $scope.requestpod = auth.pod;
+        console.log(auth.clientid);
+        console.log(auth.refreshtoken);
+        console.log(auth.clientsecret);
+
+      var promise = $http({
+          method: "post",
+          url: "/auth",
+          data: {
+              clientid: auth.clientid,
+              refreshtoken: auth.refreshtoken,
+              clientsecret: auth.clientsecret,
+              pod: auth.pod
+          }, headers: {'Content-Type': 'application/json'}
+      });
+      promise.success(function (data, status, headers, conf) {
+        $scope.accesstoken = data;
+        $scope.submittedAuth = true;
+      });
+    }
+
+    $scope.submitEmail = function (emailaddress) {
+        $scope.submittedEmail = true;
+        $scope.emailaddress = emailaddress;
+        console.log(emailaddress);
+        console.log($scope.accesstoken.access_token);
+        console.log($scope.requestpod);
+
+      var promise = $http({
+          method: "post",
+          url: "/emailexists",
+          data: {
+              accesstoken: $scope.accesstoken.access_token,
+              email: emailaddress,
+              pod: $scope.requestpod
+          }, headers: {'Content-Type': 'application/json'}
+      });
+      promise.success(function (data, status, headers, conf) {
+        $scope.submittedEmail = false;
+        $scope.submitemaildata = data;
+      });
+    }
+
+    $scope.submitGdprErasure = function (listid, recipientid) {
+        $scope.submittedGdprErasure = true;
+        console.log(listid);
+        console.log($scope.accesstoken.access_token);
+        console.log($scope.requestpod);
+
+      var promise = $http({
+          method: "post",
+          url: "/gdprerasure",
+          data: {
+              accesstoken: $scope.accesstoken.access_token,
+              email: $scope.emailaddress,
+              listid: listid,
+              pod: $scope.requestpod
+          }, headers: {'Content-Type': 'application/json'}
+      });
+      promise.success(function (data, status, headers, conf) {
+        $scope.submittedGdprErasure = false;
+        $scope.submitgdprdata = data;
+        console.log(data.data.location);
+        $scope.gdprerasure[recipientid] = {'url': data.data.location, 'listid': listid, 'type': 'erasure', 'email': $scope.emailaddress};
+        console.log($scope.gdprerasure);
+      });
+    }
+
+    $scope.openAbout = function() {
+        $uibModal.open({
+          ariaLabelledBy: 'modal-title',
+          ariaDescribedBy: 'modal-body',
+          templateUrl: 'aboutContent.html'
+        });
+    }
+
+    $scope.successClass = function(status) {
+        if(status != '0') {
+            return "success";
+        }
+    }
+
+    $scope.checkForJob = function(recipientid) {
+        var bool_exist = false;
+        var recip_id = $scope.gdprerasure[recipientid];
+        if (typeof recip_id !== 'undefined') {
+            bool_exist = true;
+        }
+        return bool_exist;
+    }
+
+    $scope.returnErasureJob = function(recipientid) {
+        return $scope.gdprerasure[recipientid];
+    }
+
+    $scope.checkStatusOfGdprJob = function(k, val) {
+        console.log("Value of gdpr job status");
+        console.log(val);
+        var recipientid = k;
+
+          var promise = $http({
+              method: "post",
+              url: "/gdprstatus",
+              data: {
+                  accesstoken: $scope.accesstoken.access_token,
+                  url: val.url
+              }, headers: {'Content-Type': 'application/json'}
+          });
+          promise.success(function (data, status, headers, conf) {
+            console.log(data);
+            $scope.gdprerasure[recipientid].status = data.data.status;
+          });
+
+    }
+
+  });
+</script>
+</body>
+</html>
